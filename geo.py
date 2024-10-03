@@ -1,5 +1,5 @@
 from math import pow, sqrt, sin, cos, pi, acos
-from typing import Self, Union
+from typing import Self, Union, ForwardRef
 from numbers import Number
 
 
@@ -94,7 +94,7 @@ class Vector(Point):
             if pos <= self.len:
                 return Point(self.norm.x * pos, self.norm.y * pos)
             else:
-                raise ValueError("Pos must not excid length of vector")
+                raise ValueError("Pos must not exceed length of vector")
         else:
             return Point(self.x * pos, self.y * pos)
 
