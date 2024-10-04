@@ -27,7 +27,7 @@ class Point:
     __radd__ = __add__
 
     def __repr__(self) -> str:
-        return f"({self.x}, {self.y})"
+        return f"({self.x:.3f}, {self.y:.3f})"
 
 
 class Vector(Point):
@@ -89,14 +89,8 @@ class Vector(Point):
     def end(self) -> Point:
         return Point(self.x, self.y)
 
-    def evaluate(self, pos: float, normalized: float = False):
-        if not normalized:
-            if pos <= self.len:
-                return Point(self.norm.x * pos, self.norm.y * pos)
-            else:
-                raise ValueError("Pos must not exceed length of vector")
-        else:
-            return Point(self.x * pos, self.y * pos)
+    def evaluate(self, pos: float):
+        return Point(self.norm.x * pos, self.norm.y * pos)
 
 
 class Arc(Vector):
@@ -110,11 +104,11 @@ class Arc(Vector):
 
     @property
     def chordlen(self):
-        return Vector(self.x, self.y).len
+        return self.chord.len
 
     @property
     def radius(self):
-        alpha = self.dir.anglebetween(Vector(self.x, self.y))
+        alpha = self.dir.anglebetween(self.chord)
         return abs(self.chordlen / 2 / sin(alpha))
 
     @property
@@ -125,14 +119,26 @@ class Arc(Vector):
 
     @property
     def len(self):
-        return 2 * self.radius * Vector(self.x, self.y).anglebetween(self.dir)
+        return 2 * self.radius * self.chord.anglebetween(self.dir)
 
-    def evaluate(self, pos: float, normalized: float = False):
-        return NotImplementedError
-        if not normalized:
-            if pos <= self.len:
-                a = pos / self.radius
-            else:
-                raise ValueError("Pos must not exceed length of arc")
-        else:
-            a = 2 * self.dir.anglebetween(Vector(self.x, self.y)) * pos
+    @property
+    def chord(self):
+        return Vector(self.x, self.y)
+
+    @property
+    def isleft(self):
+        n = self.dir.rotate(pi / 2)
+        return n.dotproduct(self.chord) > 0
+
+    @property
+    def isright(self):
+        return not self.isleft
+
+    def evaluate(self, pos: float):
+        a = pos / self.radius
+        c = self.center
+        v = Vector(-c.x, -c.y)
+        if self.isright:
+            a = -a
+        rv = v.rotate(a).end
+        return Point(rv.x + c.x, rv.y + c.y)
