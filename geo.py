@@ -22,7 +22,10 @@ class Point:
             raise NotImplementedError(f"Type {type(op).__name__} not supported")
 
     def __sub__(self, op: Self):
-        return Vector(self.x - op.x, self.y - op.y)
+        if type(op) == Point:
+            return Vector(self.x - op.x, self.y - op.y)
+        else:
+            raise NotImplementedError
 
     __radd__ = __add__
 
