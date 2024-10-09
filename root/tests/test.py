@@ -1,5 +1,5 @@
 import unittest
-import geo
+from .. import geo
 
 
 class GeoTest(unittest.TestCase):
