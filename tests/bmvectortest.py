@@ -68,13 +68,12 @@ class Vector(ut.TestCase):
         self.assertEqual(v.getdir(10), v.normalized())
 
     def testrotate(self):
-        v = bv.Vector(1, 0, 0)
-        r = bv.Vector(0, 1, 0)
-        v2 = bv.Vector(0, 0, 1)
+        v = bv.Vector(1, 1, 1)
+        r = bv.Vector(0, 1, 2)
+        v2 = bv.Vector((0.44721359549995804, -0.2944271909999159, 1.647213595499958))
         a = -pi / 2
         self.assertLess((v.rotate(r, a).val - v2.val).sum(), 0.0001)
 
-    
 
 if __name__ == "__main__":
     ut.main()
