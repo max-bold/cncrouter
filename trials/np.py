@@ -41,3 +41,7 @@ print(f"Vector normalization: {a/la.norm(a)=}")
 print(f"Subclassing ndarray: {v=} {2*v=} type={type(v).__name__}")
 print(f"Subclassing ndarray with additional properies: {v.text=}")
 print(f"Vector slicing: {v.xyz=}")
+print(f'{len(a)=}')
+print(f'{np.all(a==[1,2,3])=}')
+
+# np.all()
