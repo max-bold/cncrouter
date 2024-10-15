@@ -7,17 +7,17 @@ from math import sqrt, pi
 class Point(ut.TestCase):
     def testinit1(self):
         p = bv.Point(1, 2, 3)
-        self.assertEqual(repr(p), "p[1, 2, 3]")
+        self.assertTrue(np.all(p.val == [1, 2, 3, 0, 0, 0, 0]))
 
     def testinit2(self):
         a = np.asarray((1, 2, 3))
         p = bv.Point(a)
-        self.assertEqual(repr(p), "p[1, 2, 3]")
+        self.assertTrue(np.all(p.val == [1, 2, 3, 0, 0, 0, 0]))
 
     def testinit3(self):
         a = [1, 2, 3]
         p = bv.Point(a)
-        self.assertEqual(repr(p), "p[1, 2, 3]")
+        self.assertTrue(np.all(p.val == [1, 2, 3, 0, 0, 0, 0]))
 
     def testiniterror(self):
         self.assertRaises(ValueError, bv.Point)
@@ -25,8 +25,8 @@ class Point(ut.TestCase):
     def testadd(self):
         p = bv.Point(0, 0, 0)
         v = bv.Vector(1, 1, 0)
-        self.assertTrue(np.all((p + v).val == [1, 1, 0]))
-        self.assertTrue(np.all((v + p).val == [1, 1, 0]))
+        self.assertTrue(np.all((p + v).val == [1, 1, 0, 0, 0, 0, 0]))
+        self.assertTrue(np.all((v + p).val == [1, 1, 0, 0, 0, 0, 0]))
         self.assertTrue(type(p + v) == bv.Point)
         self.assertTrue(type(v + p) == bv.Point)
 
@@ -34,7 +34,7 @@ class Point(ut.TestCase):
         p1 = bv.Point(1, 2, 3)
         p2 = bv.Point(0, 1, 2)
         self.assertTrue(type(p1 - p2) == bv.Vector)
-        self.assertTrue(np.all((p1 - p2).val == [1, 1, 1]))
+        self.assertTrue(np.all((p1 - p2).val == [1, 1, 1, 0, 0, 0, 0]))
 
     def testeq(self):
         p1 = bv.Point(1, 2, 3)
@@ -60,7 +60,10 @@ class Vector(ut.TestCase):
         v = bv.Vector(1, 1, 1)
 
         self.assertTrue(
-            np.all(v.normalized().val == [1 / sqrt(3), 1 / sqrt(3), 1 / sqrt(3)])
+            np.all(
+                v.normalized().val
+                == [1 / sqrt(3), 1 / sqrt(3), 1 / sqrt(3), 0, 0, 0, 0]
+            )
         )
 
     def testgetdir(self):

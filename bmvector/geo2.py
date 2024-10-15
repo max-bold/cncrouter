@@ -1,5 +1,5 @@
 from collections.abc import MutableSequence
-from typing import SupportsIndex, Self, ForwardRef
+from typing import SupportsIndex, Self, ForwardRef, Iterable
 import numpy as np
 import numpy.linalg as la
 from numbers import Number
@@ -8,11 +8,14 @@ from pyquaternion import Quaternion
 
 
 class Point:
+    # val: np.ndarray
+
     def __init__(self, *args: tuple[tuple[float]] | tuple[float, ...]) -> None:
-        if len(args) == 1:
-            self.val = np.asarray(args[0])
+        self.val = np.zeros(7, float)
+        if len(args) == 1 and isinstance(args[0], Iterable):
+            self.val[: len(args[0])] = args[0]
         elif len(args) > 1:
-            self.val = np.asarray(args)
+            self.val[: len(args)] = args
         else:
             raise ValueError("Not enough of arguments to build a point")
 
@@ -54,13 +57,8 @@ class Vector(Point):
         return self.normalized()
 
     def rotate(self, v: "Vector", a: float) -> "Vector":
-        if len(v.val) == 3:
-            q = Quaternion(axis=v.val, angle=a)
-            return Vector(q.rotate(self.val))
-        else:
-            raise ValueError(
-                f"Rotation axis must be a 3d vector. Given {len(v.val)}d axis"
-            )
+        q = Quaternion(axis=v.val[:3], angle=a)
+        return Vector(q.rotate(self.val[:3]))
 
     def dot(self, v: "Vector") -> float:
         if len(self.val) == len(v.val):
