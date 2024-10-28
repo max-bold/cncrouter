@@ -49,33 +49,48 @@ class Point(ut.TestCase):
 
 class Vector(ut.TestCase):
     def testnorm(self):
-        v = bv.Vector(1, 1, 1)
+        v = bv.Vector(1, 1, 1, 1)
         self.assertEqual(v.norm, np.linalg.norm(v.val))
 
     def testlen(self):
-        v = bv.Vector(1, 1, 1)
-        self.assertEqual(v.norm, np.linalg.norm(v.val))
+        v = bv.Vector(1, 1, 1, 23)
+        self.assertEqual(v.len, np.linalg.norm(v.val[:3]))
 
     def testnormalized(self):
-        v = bv.Vector(1, 1, 1)
+        v = bv.Vector(1, 1, 1, 1)
+        nv = bv.Vector(0.5, 0.5, 0.5, 0.5)
 
-        self.assertTrue(
-            np.all(
-                v.normalized().val
-                == [1 / sqrt(3), 1 / sqrt(3), 1 / sqrt(3), 0, 0, 0, 0]
-            )
-        )
+        # self.assertTrue(np.all(v.normalized().val == [0.5, 0.5, 0.5, 0.5, 0, 0, 0]))
+        self.assertEqual(v.normalized(), nv)
 
     def testgetdir(self):
-        v = bv.Vector(1, 1, 1)
-        self.assertEqual(v.getdir(10), v.normalized())
+        v = bv.Vector(1, 1, 1, 23)
+        rv = bv.Vector(1 / sqrt(3), 1 / sqrt(3), 1 / sqrt(3))
+        self.assertEqual(v.getdir(10), rv)
+        self.assertEqual(v.getdir(), rv)
 
     def testrotate(self):
-        v = bv.Vector(1, 1, 1)
-        r = bv.Vector(0, 1, 2)
-        v2 = bv.Vector((0.44721359549995804, -0.2944271909999159, 1.647213595499958))
+        v = bv.Vector(1, 1, 1, 4)
+        ra = bv.Vector(0, 1, 2)
+        ran = ra.normalized()
+        rv = bv.Vector(0.44721359549995804, -0.2944271909999159, 1.647213595499958, 4)
         a = -pi / 2
-        self.assertLess((v.rotate(r, a).val - v2.val).sum(), 0.0001)
+        # self.assertLess((v.rotate(ra, a).val - rv.val).sum(), 0.0001)
+        self.assertEqual(v.rotate(ra, a), rv)
+        self.assertEqual(v.rotate(ran, a), rv)
+
+    def testcross(self):
+        x = bv.Vector(1, 0, 0, 23)
+        y = bv.Vector(0, 1, 0, 25)
+        z = bv.Vector(0, 0, 1)
+        self.assertEqual(x.cross(y), z)
+        self.assertEqual(bv.Vector.cross(x, y), z)
+
+    def testangleto(self):
+        a = bv.Vector(1, 0)
+        b = bv.Vector(1, 1)
+        self.assertAlmostEqual(a.angleto(b), pi / 4)
+        self.assertAlmostEqual(bv.Vector.angleto(a, b), pi / 4)
 
 
 if __name__ == "__main__":
