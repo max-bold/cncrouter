@@ -82,7 +82,7 @@ class arc(vector):
 
     def fromvar(v: vector, a: vector, r: float):
         gamma = math.acos(v.len / 2 / r) - math.pi / 2
-        sv = vector(*(v.rotate(a, gamma)[:3].tounit()))
+        sv = vector(*(v.rotate(a, gamma).to3d(unit=True)))
         return arc(*v, sdir=sv)
 
     @property
