@@ -2,6 +2,7 @@ import numpy as np
 import numpy.linalg as la
 import math
 from pyquaternion import Quaternion
+from numbers import Number
 
 
 class point(np.ndarray):
@@ -12,7 +13,10 @@ class point(np.ndarray):
 
     def __eq__(self, other):
         if type(other) == point:
-            return np.all(self.view(np.ndarray) == other.view(np.ndarray))
+            for a, b in zip(self, other):
+                if abs(a - b) > 0.0000000001:
+                    return False
+            return True
         else:
             return NotImplemented
 
@@ -22,9 +26,11 @@ class vector(point):
     def norm(self):
         return la.norm(self)
 
-    @property
-    def to3d(self) -> "vector":
-        return np.array(self[:3], float)
+    def to3d(self, unit: bool = False) -> "vector":
+        if not unit:
+            return vector(*self[:3])
+        else:
+            return vector(*self[:3]).tounit()
 
     @property
     def len(self):
@@ -36,7 +42,7 @@ class vector(point):
     def dir(self, *args) -> "vector":
         return self.tounit()
 
-    def rotate(self, axis: "vector", angle=float) -> "vector":
+    def rotate(self, axis: "vector", angle: float) -> "vector":
         q = Quaternion(axis=axis[:3], angle=angle)
         rv = q.rotate(self[:3])
         r = vector(*self)
@@ -57,14 +63,17 @@ class vector(point):
 
     def __eq__(self, other):
         if type(other) == vector:
-            return np.all(self.view(np.ndarray) == other.view(np.ndarray))
+            for a, b in zip(self, other):
+                if abs(a - b) > 0.0000000001:
+                    return False
+            return True
         else:
             return NotImplemented
 
 
 class arc(vector):
     def __new__(cls, *coords, sdir: vector) -> "arc":
-        r = super().__new__(*coords).view(cls)
+        r = super().__new__(cls, *coords).view(cls)
         r.sdir = sdir
         return r
 
@@ -73,12 +82,12 @@ class arc(vector):
 
     def fromvar(v: vector, a: vector, r: float):
         gamma = math.acos(v.len / 2 / r) - math.pi / 2
-        sv = v.rotate(a, gamma)
+        sv = vector(*(v.rotate(a, gamma)[:3].tounit()))
         return arc(*v, sdir=sv)
 
     @property
     def chord(self) -> vector:
-        return self[:3]
+        return vector(*self[:3])
 
     @property
     def chordlen(self) -> float:
@@ -98,11 +107,24 @@ class arc(vector):
         return 2 * self.chord.angleto(self.sdir)
 
     def dir(self, p: float) -> vector:
-        self.sdir.rotate(axis=self.cross(self.sdir), angle=self.angle * p)
+        return self.sdir.rotate(
+            axis=self.sdir.cross(self), angle=self.angle * p
+        ).tounit()
 
     def eval(self, p: float) -> point:
         ang = self.len * p / self.radius
         axis = self.sdir.cross(self)
-        centr = self.sdir.tounit().rotate(axis, math.pi / 2) * self.radius
+        centr = self.sdir.to3d(unit=True).rotate(axis, math.pi / 2) * self.radius
         rv = (centr * -1).rotate(axis, ang)
-        return point(*(rv + centr))
+        res = rv + centr
+        res[3:] = (self * p)[3:]
+        return point(*res)
+
+    @staticmethod
+    def fromttr(t1: vector, t2: vector, r=float) -> "arc":
+        alpha = t1.angleto(t2)
+        beta = alpha - math.pi
+        axis = t1.cross(t2)
+        cv: vector = t1.to3d(unit=True).rotate(axis, math.pi / 2) * r
+        ev = cv.rotate(axis, beta)
+        return arc(*(cv + ev), sdir=t1)

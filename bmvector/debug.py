@@ -1,8 +1,6 @@
-from geo3 import point
+from geo3 import vector, arc
 
-p1 = point(1, 2, 3, 4)
-p2 = point(1, 2, 3, 4)
-p3 = point(2, 3, 4, 5, 7)
-p1 == 10
-print(f"{p1==1=}")
-print(f"{p1==p3=}")
+v1 = vector(1, 0, 0, 1, 2, 3, 4)
+v2 = vector(0, 1, 0, 1, 2, 3, 4)
+a = arc.fromttr(v1, v2, 2)
+print(a.eval(0), a.eval(0.5), a.eval(1))
