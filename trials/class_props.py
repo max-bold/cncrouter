@@ -6,8 +6,9 @@ class T:
     def val(self):
         self.x+=1
         return self.x
-    
+
 a=T()
 
 for i in range(10):
     print(a.val)
+

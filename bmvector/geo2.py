@@ -43,6 +43,12 @@ class Point:
 
 
 class Vector(Point):
+    def __init__(self, *args):
+        if len(args) == 1 and type(args[0]) == Vector:
+            super().__init__(args[0].val)
+        else:
+            super().__init__(*args)
+
     @property
     def norm(self) -> float:
         return la.norm(self.val)
@@ -105,25 +111,17 @@ class Vector(Point):
 
 
 class Arc(Vector):
-    def __init__(self, *args, r: float, n: Vector | tuple[float, ...]):
-        """Constructs an arc as a Vector with radius
-
-        Args:
-            *args: the same as for Point
-            r (float): arc radius. Positive for counterclockwise arcs.
-            n (Vector|tuple): Vector nomal to arc plane
-
-        Raises:
-            ValueError: If 2*R is less then length of xyz vector
-        """
+    def __init__(
+        self, *args: Vector | tuple[float, ...], sdir: Vector | tuple[float, ...]
+    ) -> None:
         super().__init__(*args)
-        self.r = r
-        if type(n) == Vector:
-            self.n = n
-        else:
-            self.n = Vector(n)
-        if abs(2 * r) < la.norm(self.val[:3]):
-            raise ValueError("R*2 must be not less then length of xyz vector")
+        self.sdir = Vector(sdir)
+
+    @staticmethod
+    def fromvnr(v: Vector, n: Vector, r: float) -> "Arc":
+        gamma = acos(v.len3d / 2 / r) - pi / 2
+        sv = v.rotate3d(n, gamma)
+        return Arc(v, sdir=sv)
 
     @property
     def chord3d(self) -> Vector:
@@ -131,7 +129,7 @@ class Arc(Vector):
 
     @property
     def chordlen3d(self) -> float:
-        return la.norm(self.val[:3])
+        return self.len3d
 
     @property
     def radius(self) -> float:
@@ -158,7 +156,7 @@ class Arc(Vector):
 
         Returns:
             Point: _description_
-        """        
+        """
         pass
 
     def getdir(self, *args):

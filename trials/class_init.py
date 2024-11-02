@@ -5,7 +5,7 @@ class T:
 A = T()
 B = T()
 
-A.x = 10
+A.x = '10'
 B.x = 20
 
 

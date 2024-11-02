@@ -5,6 +5,14 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "RUN",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },
+        {
             "name": "Python Debugger: Module",
             "type": "debugpy",
             "request": "launch",
@@ -22,6 +30,12 @@
             "type": "debugpy",
             "request": "launch",
             "module": "bmvector.arc"
+        },
+        {
+            "name": "debug.py",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "bmvector.debug"
         }
     ]
 }
