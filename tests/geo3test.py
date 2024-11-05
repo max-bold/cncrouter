@@ -19,6 +19,14 @@ class point_test(ut.TestCase):
         self.assertFalse(p1 == p3)
         self.assertFalse(p1 == v)
 
+    def testsub(self):
+        p1 = point()
+        p2 = point(0, 1, 2, 3)
+        v = vector(0, 1, 2, 3)
+        self.assertEqual(p2 - p1, v)
+        with self.assertRaises(TypeError):
+            p2 - v
+
 
 class vector_test(ut.TestCase):
     def testnew(self):
@@ -38,12 +46,12 @@ class vector_test(ut.TestCase):
     def testunit(self):
         v = vector(1, 2, 3, 4, 5)
         a = np.array((1, 2, 3, 4, 5)) / math.sqrt(55)
-        self.assertEqual(v.tounit(), vector(*a))
+        self.assertEqual(v.tounit(), vector(a))
 
     def testdir(self):
         v = vector(1, 2, 3, 4, 5)
         a = np.array((1, 2, 3, 4, 5)) / math.sqrt(55)
-        self.assertEqual(v.tounit(), vector(*a))
+        self.assertEqual(v.tounit(), vector(a))
 
     def testrotate(self):
         v = vector(1, 0, 0, 2, 3, 4, 5)
@@ -108,32 +116,38 @@ class arc_test(ut.TestCase):
     def testradius(self):
         v = vector(2, 2)
         d = vector(1, 0)
-        a = arc(*v, sdir=d)
+        a = arc(v, sdir=d)
         self.assertEqual(a.radius, 2)
 
     def testlen(self):
         v = vector(2, 2)
         d = vector(1, 0)
-        a = arc(*v, sdir=d)
+        a = arc(v, sdir=d)
         self.assertAlmostEqual(a.len, math.pi)
+
+    def testnorm(self):
+        v = vector(2, 2, 0, 4, 7, 89, 56)
+        d = vector(1, 0)
+        a = arc(v, sdir=d)
+        self.assertAlmostEqual(a.norm, 105.508, 2)
 
     def testangle(self):
         v = vector(2, 2)
         d = vector(1, 0)
-        a = arc(*v, sdir=d)
+        a = arc(v, sdir=d)
         self.assertAlmostEqual(a.angle, math.pi / 2)
 
     def testdir(self):
         v = vector(2, 2)
         d = vector(1, 0)
-        a = arc(*v, sdir=d)
+        a = arc(v, sdir=d)
         self.assertEqual(a.dir(0.5), vector(1, 1).tounit())
         self.assertEqual(a.dir(1), vector(0, 1))
 
     def testeval(self):
         v = vector(2, 2, 0, 3)
         d = vector(1, 0)
-        a = arc(*v, sdir=d)
+        a = arc(v, sdir=d)
         r2 = math.sqrt(2)
         self.assertEqual(a.eval(0.5), point(r2, 2 - r2, 0, 1.5))
         self.assertEqual(a.eval(1), point(2, 2, 0, 3))

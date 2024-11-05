@@ -36,6 +36,16 @@
             "type": "debugpy",
             "request": "launch",
             "module": "bmvector.debug"
+        },
+        {
+            "name": "MUPY",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "mypy",
+            "args": [
+                "${file}"
+            ],
+            "console": "integratedTerminal"
         }
     ]
 }

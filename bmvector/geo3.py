@@ -3,13 +3,26 @@ import numpy.linalg as la
 import math
 from pyquaternion import Quaternion
 from numbers import Number
+from typing import Self, Any, Iterable
+from nptyping import NDArray
 
 
 class point(np.ndarray):
-    def __new__(cls, *coords: tuple[float, ...]) -> "point":
+    def __new__(
+        cls, *coords: tuple[tuple[int | float] | NDArray[Any, Any], ...]
+    ) -> Self:
         r = np.zeros(7, float).view(cls)
+        if len(coords) == 1 and point.issequence(coords[0]):
+            coords = coords[0]
         r[: len(coords)] = coords
         return r
+
+    @staticmethod
+    def issequence(op) -> bool:
+        for f in ["__getitem__", "__len__"]:
+            if f not in dir(op):
+                return False
+        return True
 
     def __eq__(self, other):
         if type(other) == point:
@@ -18,7 +31,15 @@ class point(np.ndarray):
                     return False
             return True
         else:
-            return NotImplemented
+            return False
+
+    def __sub__(self, other):
+        if type(other) == point:
+            return vector((self.view(np.ndarray) - other.view(np.ndarray)))
+        else:
+            raise TypeError(
+                f"Unsupported operand type(s) for __sub__: '{type(self).__name__}' and '{type(other).__name__}'"
+            )
 
 
 class vector(point):
@@ -28,9 +49,9 @@ class vector(point):
 
     def to3d(self, unit: bool = False) -> "vector":
         if not unit:
-            return vector(*self[:3])
+            return vector(self[:3])
         else:
-            return vector(*self[:3]).tounit()
+            return vector(self[:3]).tounit()
 
     @property
     def len(self):
@@ -45,7 +66,7 @@ class vector(point):
     def rotate(self, axis: "vector", angle: float) -> "vector":
         q = Quaternion(axis=axis[:3], angle=angle)
         rv = q.rotate(self[:3])
-        r = vector(*self)
+        r = vector(self)
         r[:3] = rv
         return r
 
@@ -53,13 +74,13 @@ class vector(point):
         return np.dot(self, v)
 
     def angleto(self, v: "vector") -> float:
-        return math.acos(self[:3].dot(v[:3] / self.len / v.len))
+        return math.acos(self[:3].dot(v[:3]) / self.len / v.len)
 
     def cross(self, v: "vector") -> "vector":
-        return vector(*(np.cross(self[:3], v[:3])))
+        return vector((np.cross(self[:3], v[:3])))
 
     def eval(self, p: float) -> point:
-        return point(*(self * p))
+        return point((self * p))
 
     def __eq__(self, other):
         if type(other) == vector:
@@ -68,7 +89,7 @@ class vector(point):
                     return False
             return True
         else:
-            return NotImplemented
+            return False
 
 
 class arc(vector):
@@ -80,14 +101,14 @@ class arc(vector):
     def __array_finalize__(self, obj):
         self.sdir: vector = None
 
-    def fromvar(v: vector, a: vector, r: float):
+    def fromvar(v: vector, a: vector, r: float) -> "arc":
         gamma = math.acos(v.len / 2 / r) - math.pi / 2
-        sv = vector(*(v.rotate(a, gamma).to3d(unit=True)))
-        return arc(*v, sdir=sv)
+        sv = vector((v.rotate(a, gamma).to3d(unit=True)))
+        return arc(v, sdir=sv)
 
     @property
     def chord(self) -> vector:
-        return vector(*self[:3])
+        return vector(self[:3])
 
     @property
     def chordlen(self) -> float:
@@ -101,6 +122,10 @@ class arc(vector):
     @property
     def len(self):
         return 2 * self.radius * self.chord.angleto(self.sdir)
+
+    @property
+    def norm(self):
+        return la.norm([self.len] + self[3:].tolist())
 
     @property
     def angle(self):
@@ -118,7 +143,7 @@ class arc(vector):
         rv = (centr * -1).rotate(axis, ang)
         res = rv + centr
         res[3:] = (self * p)[3:]
-        return point(*res)
+        return point(res)
 
     @staticmethod
     def fromttr(t1: vector, t2: vector, r=float) -> "arc":
@@ -127,4 +152,4 @@ class arc(vector):
         axis = t1.cross(t2)
         cv: vector = t1.to3d(unit=True).rotate(axis, math.pi / 2) * r
         ev = cv.rotate(axis, beta)
-        return arc(*(cv + ev), sdir=t1)
+        return arc((cv + ev), sdir=t1)
