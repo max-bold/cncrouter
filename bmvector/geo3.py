@@ -3,18 +3,20 @@ import numpy.linalg as la
 import math
 from pyquaternion import Quaternion
 from numbers import Number
-from typing import Self, Any, Iterable
-from nptyping import NDArray
+from typing import Self, Any, Iterable, Sequence
+from nptyping import NDArray, Shape, Float64, DType, Float
 
 
 class point(np.ndarray):
     def __new__(
-        cls, *coords: tuple[tuple[int | float] | NDArray[Any, Any], ...]
+        cls, x: int | float | NDArray[Shape["7"], Float], *coords: tuple[int | float]
     ) -> Self:
         r = np.zeros(7, float).view(cls)
-        if len(coords) == 1 and point.issequence(coords[0]):
-            coords = coords[0]
-        r[: len(coords)] = coords
+        if not coords and isinstance(x, (np.ndarray, Sequence)):
+            r[:] = x[:]
+        else:
+            r[0] = x
+            r[1 : len(coords)] = coords
         return r
 
     @staticmethod
