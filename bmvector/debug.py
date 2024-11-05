@@ -15,3 +15,5 @@ print(v - p2)
 reveal_type(point.__new__())
 reveal_type(vector.__new__())
 reveal_type(arc.__new__())
+
+123
