@@ -103,6 +103,10 @@ class arc(vector):
         return 2 * self.radius * self.chord.angleto(self.sdir)
 
     @property
+    def norm(self):
+        return la.norm([self.len] + self[3:].tolist())
+
+    @property
     def angle(self):
         return 2 * self.chord.angleto(self.sdir)
 
