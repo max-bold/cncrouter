@@ -20,7 +20,7 @@ class point_test(ut.TestCase):
         self.assertFalse(p1 == v)
 
     def testsub(self):
-        p1 = point()
+        p1 = point(0)
         p2 = point(0, 1, 2, 3)
         v = vector(0, 1, 2, 3)
         self.assertEqual(p2 - p1, v)
@@ -157,7 +157,9 @@ class arc_test(ut.TestCase):
         v1 = vector(1, 0, 0, 1, 2, 3, 4)
         v2 = vector(0, 1, 0, 1, 2, 3, 4)
         a = arc.fromttr(v1, v2, 2)
-        self.assertEqual(a.eval(0), point())
+        self.assertEqual(a.eval(0), point(0))
         r2 = math.sqrt(2)
         self.assertEqual(a.eval(0.5), point(r2, 2 - r2))
         self.assertEqual(a.eval(1), point(2, 2))
+
+    # def testfillet(self):

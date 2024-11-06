@@ -13,10 +13,10 @@ class point(np.ndarray):
     ) -> Self:
         r = np.zeros(7, float).view(cls)
         if not coords and isinstance(x, (np.ndarray, Sequence)):
-            r[:] = x[:]
+            r[:len(x)] = x[:]
         else:
             r[0] = x
-            r[1 : len(coords)] = coords
+            r[1 : len(coords) + 1] = coords
         return r
 
     @staticmethod
@@ -42,6 +42,10 @@ class point(np.ndarray):
             raise TypeError(
                 f"Unsupported operand type(s) for __sub__: '{type(self).__name__}' and '{type(other).__name__}'"
             )
+
+    @property
+    def asarray(self):
+        return self.view(np.ndarray)
 
 
 class vector(point):
@@ -73,7 +77,7 @@ class vector(point):
         return r
 
     def dot(self, v: "vector") -> float:
-        return np.dot(self, v)
+        return np.dot(self.asarray, v.asarray)
 
     def angleto(self, v: "vector") -> float:
         return math.acos(self[:3].dot(v[:3]) / self.len / v.len)
@@ -93,10 +97,26 @@ class vector(point):
         else:
             return False
 
+    def __mul__(self, other) -> "vector":
+        if isinstance(other, Number):
+            return vector(self.view(np.ndarray) * other)
+        else:
+            raise TypeError(
+                f"Multiplication of {type(self).__name__} by {type(other).__name__} is not supported"
+            )
+
+    def __add__(self, other) -> "vector":
+        if type(other) == vector:
+            return vector(self.asarray + other.asarray)
+        else:
+            raise TypeError(
+                f"Adding {type(other).__name__} to {type(self).__name__} is not supported"
+            )
+
 
 class arc(vector):
-    def __new__(cls, *coords, sdir: vector) -> "arc":
-        r = super().__new__(cls, *coords).view(cls)
+    def __new__(cls, x, *coords, sdir: vector) -> "arc":
+        r = super().__new__(cls, x, *coords).view(cls)
         r.sdir = sdir
         return r
 
@@ -155,3 +175,25 @@ class arc(vector):
         cv: vector = t1.to3d(unit=True).rotate(axis, math.pi / 2) * r
         ev = cv.rotate(axis, beta)
         return arc((cv + ev), sdir=t1)
+
+    @staticmethod
+    def fillet(t1: vector, t2: vector, r: float) -> tuple[vector, "arc", vector]:
+        alpha = t1.angleto(t2)
+        trim = r / math.tan(alpha / 2)
+        if trim >= t1.len and trim >= t2.len:
+            iv = t1.tounit() * (t1.len - trim)
+            ivend = iv.eval(1)
+            ov = t2.tounit() * (t2.len - trim)
+            ovstart = (t1 + (t2.tounit() * trim)).eval(1)
+            av = ovstart - ivend
+            a = arc(av, sdir=iv.tounit())
+            return iv, a, ov
+        else:
+            raise ValueError("Length of input vectors must be greater then trim value")
+
+    @staticmethod
+    def fbydist(t1: vector, t2: vector, dist: float) -> tuple[vector, "arc", vector]:
+        alpha = t1.angleto(t2) / 2
+        x = math.sin(alpha / 2)
+        r = dist * x / (1 - x)
+        return arc.fillet(t1, t2, r)
