@@ -94,7 +94,7 @@ class arc_test(ut.TestCase):
     def testnew(self):
         a = arc(1, 2, 3, 4, 5, 6, 7, sdir=vector(0, 1, 2))
         self.assertEqual(a[3], 4)
-        self.assertEqual(a.sdir[2], 2)
+        self.assertEqual(a.sdir[2], 2 / math.sqrt(5))
 
     def testavr(self):
         v = vector(2, 2, 0, 4, 89, 78, 1)
@@ -162,4 +162,31 @@ class arc_test(ut.TestCase):
         self.assertEqual(a.eval(0.5), point(r2, 2 - r2))
         self.assertEqual(a.eval(1), point(2, 2))
 
-    # def testfillet(self):
+    def testeq(self):
+        v1 = vector(10, 0, 0, 6)
+        v2 = vector(0, 10, 0, 8)
+        a1 = arc(v2, sdir=v1)
+        a2 = arc(0, 10, 0, 8, sdir=(1, 0))
+        a3 = arc(0, 11, 0, 8, sdir=(1, 0))
+        a4 = arc(0, 10, 0, 8, sdir=(2, 0))
+        a5 = arc(0, 10, 0, 8, sdir=(2, 2))
+        self.assertEqual(a1, a2)
+        self.assertNotEqual(a1, a3)
+        self.assertEqual(a1, a4)
+        self.assertNotEqual(a1, a5)
+
+    def testfillet(self):
+        v1 = vector(10, 0, 0, 6)
+        v2 = vector(0, 10, 0, 8)
+        vt1, a, vt2 = arc.fillet(v1, v2, 2)
+        self.assertEqual(a, arc(2, 2, 0, 2.8, sdir=(1, 0)))
+        self.assertEqual(vt1, vector(8, 0, 0, 4.8))
+        self.assertEqual(vt2, vector(0, 8, 0, 6.4))
+        self.assertEqual(v1 + v2, vt1 + a + vt2)
+
+    def testfbydist(self):
+        v1 = vector(10, 0, 0, 6)
+        v2 = vector(0, 10, 0, 8)
+        vt1, a, vt2 = arc.fbydist(v1, v2, 1)
+        self.assertEqual(v1 + v2, vt1 + a + vt2)
+        self.assertEqual(a.radius, )

@@ -97,7 +97,7 @@ class Vector(Point):
         else:
             return NotImplemented
 
-    def __eq__(self, op: "Vector") -> bool:
+    def __eq__(self, op) -> bool:
         if type(op) == Vector:
             return np.all(self.val == op.val)
         else:

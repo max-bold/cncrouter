@@ -9,11 +9,11 @@ from nptyping import NDArray, Shape, Float64, DType, Float
 
 class point(np.ndarray):
     def __new__(
-        cls, x: int | float | NDArray[Shape["7"], Float], *coords: tuple[int | float]
+        cls, x: int | float | NDArray[Shape["7"], Float], *coords: int | float
     ) -> Self:
         r = np.zeros(7, float).view(cls)
         if not coords and isinstance(x, (np.ndarray, Sequence)):
-            r[:len(x)] = x[:]
+            r[: len(x)] = x[:]
         else:
             r[0] = x
             r[1 : len(coords) + 1] = coords
@@ -34,6 +34,9 @@ class point(np.ndarray):
             return True
         else:
             return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
     def __sub__(self, other):
         if type(other) == point:
@@ -106,18 +109,28 @@ class vector(point):
             )
 
     def __add__(self, other) -> "vector":
-        if type(other) == vector:
+        if type(other) == vector or type(other) == arc:
             return vector(self.asarray + other.asarray)
         else:
             raise TypeError(
                 f"Adding {type(other).__name__} to {type(self).__name__} is not supported"
             )
 
+    def __truediv__(self, other) -> "vector":
+        if isinstance(other, Number):
+            return vector(self.asarray / other)
+        else:
+            raise TypeError(
+                f"{type(self).__name__} can be divided only by number, {type(other).__name__} given"
+            )
+
+    # __truediv__ = __div__
+
 
 class arc(vector):
-    def __new__(cls, x, *coords, sdir: vector) -> "arc":
+    def __new__(cls, x, *coords, sdir: vector | tuple[float | int]) -> "arc":
         r = super().__new__(cls, x, *coords).view(cls)
-        r.sdir = sdir
+        r.sdir = vector(sdir[: min(3, len(sdir))]).tounit()
         return r
 
     def __array_finalize__(self, obj):
@@ -180,16 +193,18 @@ class arc(vector):
     def fillet(t1: vector, t2: vector, r: float) -> tuple[vector, "arc", vector]:
         alpha = t1.angleto(t2)
         trim = r / math.tan(alpha / 2)
-        if trim >= t1.len and trim >= t2.len:
-            iv = t1.tounit() * (t1.len - trim)
+        if trim <= t1.len and trim <= t2.len:
+            iv = t1 / t1.len * (t1.len - trim)
             ivend = iv.eval(1)
-            ov = t2.tounit() * (t2.len - trim)
-            ovstart = (t1 + (t2.tounit() * trim)).eval(1)
+            ov = t2 / t2.len * (t2.len - trim)
+            ovstart = (t1 + (t2 / t2.len * trim)).eval(1)
             av = ovstart - ivend
             a = arc(av, sdir=iv.tounit())
             return iv, a, ov
         else:
-            raise ValueError("Length of input vectors must be greater then trim value")
+            raise ValueError(
+                f"Length of input vectors must be greater then trim value. Given {t1.len=}, {t2.len=}, {trim=}"
+            )
 
     @staticmethod
     def fbydist(t1: vector, t2: vector, dist: float) -> tuple[vector, "arc", vector]:
@@ -197,3 +212,21 @@ class arc(vector):
         x = math.sin(alpha / 2)
         r = dist * x / (1 - x)
         return arc.fillet(t1, t2, r)
+
+    @property
+    def asvector(self):
+        return vector(self.asarray)
+
+    def __eq__(self, other):
+        if type(other) == arc:
+            return self.asvector == other.asvector and self.sdir == other.sdir
+        else:
+            raise TypeError(
+                f"{type(self).__name__} can't be compared with {type(other).__name__}"
+            )
+
+    # def __add__(self, other):
+    #     if type(other) == vector:
+    #         return vector(self.asarray + other.asarray)
+    #     else:
+    #         return super().__add__(other)
