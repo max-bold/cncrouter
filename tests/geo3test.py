@@ -189,4 +189,4 @@ class arc_test(ut.TestCase):
         v2 = vector(0, 10, 0, 8)
         vt1, a, vt2 = arc.fbydist(v1, v2, 1)
         self.assertEqual(v1 + v2, vt1 + a + vt2)
-        self.assertEqual(a.radius, )
+        self.assertAlmostEqual(a.radius, 2.41, 2)

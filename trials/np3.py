@@ -6,4 +6,5 @@ c = 454
 # with np.errstate(divide="ignore"):
 #     print((a / b).min())
 # p = *a+c
-print(type(*a))
+for i in range(7):
+    print(i)

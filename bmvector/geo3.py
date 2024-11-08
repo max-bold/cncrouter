@@ -9,7 +9,9 @@ from nptyping import NDArray, Shape, Float64, DType, Float
 
 class point(np.ndarray):
     def __new__(
-        cls, x: int | float | NDArray[Shape["7"], Float], *coords: int | float
+        cls,
+        x: int | float | np.ndarray[Any, np.dtype[np.floating[Any]]],
+        *coords: int | float,
     ) -> Self:
         r = np.zeros(7, float).view(cls)
         if not coords and isinstance(x, (np.ndarray, Sequence)):
@@ -79,7 +81,7 @@ class vector(point):
         r[:3] = rv
         return r
 
-    def dot(self, v: "vector") -> float:
+    def dotv(self, v: "vector") -> float:
         return np.dot(self.asarray, v.asarray)
 
     def angleto(self, v: "vector") -> float:
@@ -123,8 +125,6 @@ class vector(point):
             raise TypeError(
                 f"{type(self).__name__} can be divided only by number, {type(other).__name__} given"
             )
-
-    # __truediv__ = __div__
 
 
 class arc(vector):
@@ -208,7 +208,7 @@ class arc(vector):
 
     @staticmethod
     def fbydist(t1: vector, t2: vector, dist: float) -> tuple[vector, "arc", vector]:
-        alpha = t1.angleto(t2) / 2
+        alpha = t1.angleto(t2)
         x = math.sin(alpha / 2)
         r = dist * x / (1 - x)
         return arc.fillet(t1, t2, r)
@@ -225,8 +225,45 @@ class arc(vector):
                 f"{type(self).__name__} can't be compared with {type(other).__name__}"
             )
 
-    # def __add__(self, other):
-    #     if type(other) == vector:
-    #         return vector(self.asarray + other.asarray)
-    #     else:
-    #         return super().__add__(other)
+
+class machine:
+    def __init__(self):
+        self.jerks = np.array(
+            (100000, 100000, 100000, 100000, 100000, 100000, 100000), float
+        )  # mm/s^3 or deg/s^3 for each axis
+        self.accs = np.array(
+            (10000, 10000, 10000, 10000, 10000, 10000, 10000), float
+        )  # mm/s^2 or deg/s^2 for each axis
+        self.speeds = np.array(
+            (1000, 1000, 1000, 1000, 1000, 1000, 1000), float
+        )  # mm/s or or deg/s^2 for each axis
+
+
+class move:
+    def __init__(self, va: vector | arc):
+        m = machine()
+        self.va = va
+        self.times = np.zeros(7, float)
+        self.vin = 0
+        self.vout = 0
+        steps = 10 if type(va) == arc else 1
+        mj = np.zeros(steps, float)
+        ma = np.zeros(steps, float)
+        mv = np.zeros(steps, float)
+        with np.errstate(divide="ignore"):
+            for i, n in zip(np.linspace(0, 1, steps), range(steps)):
+                mj[n] = (m.jerks / va.dir(i).asarray).min()
+                ma[n] = (m.accs / va.dir(i).asarray).min()
+                mv[n] = (m.speeds / va.dir(i).asarray).min()
+        self.mj = mj.min()
+        self.ma = ma.min()
+        self.mv = mv.min()
+        if type(va) == arc:
+            r = va.radius
+            self.mv = min(self.mv, math.sqrt(self.ma * r))
+
+    def plan(self, sv: float = 0, ev: float = 0):
+        pass
+
+    # def calc(self, v:vector|arc)->float:
+    #     return np.
