@@ -1,3 +1,9 @@
+"""
+Profiler methods for true s-curve movement planning.
+inspired by https://github.com/max-bold/wallplotter/blob/main/profiler.py
+© Max Boldyrev, 2024.
+"""
+
 from typing import Generator
 from math import copysign
 from numpy import zeros, ndarray, dtype, floating, arange

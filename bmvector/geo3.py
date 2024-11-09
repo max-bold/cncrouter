@@ -1,4 +1,5 @@
 import numpy as np
+from numpy import ndarray, dtype, floating
 import numpy.linalg as la
 import math
 from pyquaternion import Quaternion
@@ -7,26 +8,31 @@ from typing import Self, Any, Iterable, Sequence
 from nptyping import NDArray, Shape, Float64, DType, Float
 
 
-class point(np.ndarray):
+class point(ndarray):
+    """7D point class. Is a base class for vectors and arcs. Inherits ndarray.
+    Point can be treated like a regular ndarray
+    """
+
     def __new__(
         cls,
-        x: int | float | np.ndarray[Any, np.dtype[np.floating[Any]]],
+        x: Number | ndarray[Any, dtype[floating[Any]]],
         *coords: int | float,
     ) -> Self:
+        """Initializes new point
+
+        Args:
+            x (Number | ndarray): _description_
+
+        Returns:
+            Self: _description_
+        """
         r = np.zeros(7, float).view(cls)
-        if not coords and isinstance(x, (np.ndarray, Sequence)):
-            r[: len(x)] = x[:]
+        if not coords and isinstance(x, (ndarray, Sequence)):
+            r[: min(len(x), 7)] = x[:7]
         else:
             r[0] = x
             r[1 : len(coords) + 1] = coords
         return r
-
-    @staticmethod
-    def issequence(op) -> bool:
-        for f in ["__getitem__", "__len__"]:
-            if f not in dir(op):
-                return False
-        return True
 
     def __eq__(self, other):
         if type(other) == point:
@@ -42,7 +48,7 @@ class point(np.ndarray):
 
     def __sub__(self, other):
         if type(other) == point:
-            return vector((self.view(np.ndarray) - other.view(np.ndarray)))
+            return vector((self.view(ndarray) - other.view(ndarray)))
         else:
             raise TypeError(
                 f"Unsupported operand type(s) for __sub__: '{type(self).__name__}' and '{type(other).__name__}'"
@@ -50,7 +56,7 @@ class point(np.ndarray):
 
     @property
     def asarray(self):
-        return self.view(np.ndarray)
+        return self.view(ndarray)
 
 
 class vector(point):
@@ -104,7 +110,7 @@ class vector(point):
 
     def __mul__(self, other) -> "vector":
         if isinstance(other, Number):
-            return vector(self.view(np.ndarray) * other)
+            return vector(self.view(ndarray) * other)
         else:
             raise TypeError(
                 f"Multiplication of {type(self).__name__} by {type(other).__name__} is not supported"
