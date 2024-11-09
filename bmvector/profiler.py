@@ -1,6 +1,7 @@
 from typing import Generator
 from math import copysign
 from numpy import zeros, ndarray, dtype, floating, arange
+from numbers import Number, Real
 
 
 def integrate(
@@ -56,9 +57,9 @@ def calcerrors(
             1: Speed error, m/s
     """
     p, v, a = integrate(mj, ts, vin)
-    ep = tp - p
-    ev = vout - v
-    return ep, ev
+    pe = tp - p
+    ve = vout - v
+    return pe, ve
 
 
 def dintegrate(
@@ -102,6 +103,13 @@ def dintegrate(
         yield p, v, a, j, t
 
 
+def gs(op: float) -> int:
+    if op >= 0.0:
+        return 1
+    else:
+        return -1
+
+
 def plan(
     tp: float,
     mj: float,
@@ -109,8 +117,8 @@ def plan(
     mv: float,
     vin: float = 0,
     vout: float = 0,
-    tep: float = 1 / 100,
-    tev: float = 1 / 100,
+    tpe: float = 1 / 100,
+    tve: float = 1 / 100,
     tstep: float | None = None,
 ) -> ndarray[int, dtype[floating]]:
     """Calculates movement plan - a list of 7 time intervals, describing the movement.
@@ -122,9 +130,9 @@ def plan(
         mv (float): max velocity
         vin (float, optional): Speed at start point, m/s. Defaults to 0.
         vout (float, optional): Speed at end point, m/s. Defaults to 0.
-        tep (float, optional): Target position error. Defaults to 1/100.
-        tev (float, optional): Target speed error. Defaults to 1/100.
-        ts (float, optional): Timestep at start. Defaults to min(ma/mj/10, mv/ma/10). Larger timesteps can cause faster but less accurate results. Smaller causes longer convergence.
+        tpe (float, optional): Target position error. Defaults to 1/100.
+        tve (float, optional): Target velocity error. Defaults to 1/100.
+        tstep (float, optional): Timestep at start. Defaults to min(ma/mj/10, mv/ma/10). Larger timesteps can cause faster but less accurate results. Smaller causes longer convergence.
 
 
     Returns:
@@ -136,24 +144,25 @@ def plan(
     if not tstep:
         tstep = min(ma / mj / 10, mv / ma / 10)
 
-    ep = tp
-    ev = vout - vin
-    prevepsign: float = 1
+    pe = tp
+    ve = vout - vin
+    pes = 1
+    ves = 1
     osccounter = 0
-    while abs(ep) > tep or abs(ev) > tev:
+    while abs(pe) > tpe or abs(ve) > tve:
 
-        ep, ev = calcerrors(mj, ts, tp, vin, vout)
+        pe, ve = calcerrors(mj, ts, tp, vin, vout)
 
-        # If oscilation (repeated change of ep sign) is detected we have to reduce tstep to break inf loop.
-        epsign = copysign(1, ep)
-        if epsign != prevepsign:
+        # If oscilation (repeated change of pe sign) is detected we have to reduce tstep to break inf loop.
+        if pes != gs(pe) or ves != gs(ve):
             osccounter += 1
-            prevepsign = epsign
+            pes = gs(pe)
+            ves = gs(ve)
         if osccounter > 100:
             tstep = tstep / 2
             osccounter = 0
 
-        if ep > tep:
+        if pe > tpe:
             # Rise jerk time
             v3 = integrate(mj, ts[:3], vin)[1]
             if ts[0] < ma / mj and v3 < mv:
@@ -166,7 +175,7 @@ def plan(
             else:
                 ts[3] += tstep
 
-        elif ep < -tep:
+        elif pe < -tpe:
             # Lower travel time
             if ts[3] > 0:
                 ts[3] = max(ts[3] - tstep, 0)
@@ -179,8 +188,8 @@ def plan(
                 ts[2] = ts[0]
 
         # Lets integrate timelist and calculate errors again to correct vout error
-        ep, ev = calcerrors(mj, ts, tp, vin, vout)
-        if ev < -tev:
+        pe, ve = calcerrors(mj, ts, tp, vin, vout)
+        if ve < -tve:
             # Rise neg jerk time
             if ts[4] < ma / mj:
                 ts[4] += tstep
@@ -189,7 +198,7 @@ def plan(
             else:
                 ts[5] += tstep
 
-        elif ev > tev:
+        elif ve > tve:
             # Lower neg acc time
             if ts[5] > 0:
                 ts[5] = max(ts[5] - tstep, 0)
