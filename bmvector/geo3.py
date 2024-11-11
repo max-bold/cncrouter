@@ -18,10 +18,12 @@ class point(ndarray):
         x: Number | ndarray[Any, dtype[floating[Any]]],
         *coords: int | float,
     ) -> Self:
+        
         """Initializes new point
 
         Args:
             x (Number | ndarray): _description_
+            
 
         Returns:
             Self: _description_
