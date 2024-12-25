@@ -7,6 +7,7 @@ inspired by https://github.com/max-bold/wallplotter/blob/main/profiler.py
 # from typing import Generator
 # from math import copysign
 import numpy as np
+from math import sqrt
 
 # from numbers import Number, Real
 
@@ -468,6 +469,184 @@ def plan3(j, maxa, maxv, tp, vin=0, vout=0, cb=None):
                 ts[6] = ts[4]
         ts = alignspeed(ts, js, vin, vout, maxa, maxv, tvp, s)
         avps = integratetolist(ts, js, vin)
+        if s == 0:
+            raise NoconvergenceError("Failed to adjust path length")
+
+    return ts
+
+
+def calcspeedramp(ts, js, vin, vout, maxa, maxv, tp, tvp, tpp):
+
+    avps = integratetolist(ts, js, vin)
+
+    s = 1 / 100
+    up = None
+
+    while abs(avps[7, 1] - vout) > tvp:
+        if avps[7, 1] < vout:
+            if up == False:
+                s /= 2
+            up = True
+            if ts[5] > 0:
+                ts[5] = max(ts[5] - s, 0)
+            elif ts[4] > 0:
+                ts[4] = max(ts[4] - s, 0)
+                ts[6] = ts[4]
+            elif avps[1, 0] < maxa:
+                ts[0] += min(s, (maxa - avps[1, 0]) / js[0])
+                ts[2] = ts[0]
+            else:
+                if ts[0]:
+                    ts[1] += min(s, (maxv - avps[3, 1]) / ts[0] / js[0])
+                else:
+                    ts[1] += s
+        elif avps[7, 1] > vout:
+            if up == True:
+                s /= 2
+            up = False
+            if ts[1] > 0:
+                ts[1] = max(ts[1] - s, 0)
+            elif ts[0] > 0:
+                ts[0] = max(ts[0] - s, 0)
+                ts[2] = ts[0]
+            elif -avps[5, 0] < maxa:
+                ts[4] += min(s, (maxa + avps[5, 0]) / js[0])
+                ts[6] = ts[4]
+            else:
+                if ts[3]:
+                    ts[5] += min(s, (vout - avps[7, 1]) / ts[3] / js[0])
+                else:
+                    ts[5] += s
+        avps = integratetolist(ts, js, vin)
+
+        if s == 0:
+            raise NoconvergenceError(
+                f"Couldn't calculate speed ramp with {vin=}, {vout=}, {maxa=},{maxv=}. No convergence."
+            )
+
+    if avps[7, 2] > tp + tpp:
+        raise PathtoshortError(
+            f"Path {tp=:.3f} is to short. To ramp from {vin=:.3f} to {vout=:.3f} with given j={js[0]:.0f} and {maxa=:.0f} it should be not shorter than {avps[7,2]:.3f}"
+        )
+
+    return ts
+
+
+def plan4(j, maxa, maxv, tp, vin=0, vout=0):
+
+    tpp = 1 / 1000
+    tvp = 1 / 1000
+    tap = 1 / 1000
+
+    if vin > maxv or vout > maxv:
+        raise ValueError(f"{vin=} and {vout=} must be smaller or equal to {maxv=}!")
+    js = np.array((1, 0, -1, 0, -1, 0, 1), float) * j
+    ts = np.zeros(7, float)
+
+    calcspeedramp(ts, js, vin, vout, maxa, maxv, tp, tvp, tpp)
+
+    avps = integratetolist(ts, js, vin)
+
+    s = 1 / 100
+    up = None
+
+    while abs(avps[7, 2] - tp) > tpp:
+        if avps[7, 2] < tp:
+            if up == False:
+                s /= 2
+            up = True
+            if avps[1, 0] < maxa and avps[3, 1] < maxv:
+                sss = sqrt(
+                    j
+                    * (
+                        (ts[1] ** 2 + 4 * ts[0] * ts[1] + 4 * ts[0] ** 2) * j
+                        + 4 * (maxv - avps[3, 1])
+                    )
+                ) / (2 * j) - (ts[1] / 2 + ts[0])
+                ss = min(s, (maxa - avps[1, 0]) / j, sss)
+                if -avps[5, 0] < maxa:
+                    sss = (
+                        sqrt(
+                            4 * ss**2
+                            + (4 * ts[1] + 8 * ts[0]) * ss
+                            + ts[5] ** 2
+                            + 4 * ts[4] * ts[5]
+                            + 4 * ts[4] ** 2
+                        )
+                        - ts[5]
+                    ) / 2 - ts[4]
+                    ts[4] += sss
+                    ts[6] = ts[4]
+                else:
+                    sss = ss * (ss + ts[1] + 2 * ts[0]) / ts[4]
+                    ts[5] += sss
+                ts[0] += ss
+                ts[2] = ts[0]
+
+            elif avps[3, 1] < maxv:
+                if ts[0]:
+                    ss = min(s, (maxv - avps[3, 1]) / ts[0] / j)
+                else:
+                    ss = s
+                ts[1] += ss
+                if -avps[5, 0] < maxa:
+                    sss = (
+                        sqrt(
+                            4 * ts[0] * ss
+                            + ts[5] ** 2
+                            + 4 * ts[4] * ts[5]
+                            + 4 * ts[4] ** 2
+                        )
+                        - ts[5]
+                    ) / 2 - ts[4]
+                    ts[4] += sss
+                    ts[6] = ts[4]
+                else:
+                    ts[5] += ts[0] * ss / ts[4]
+            else:
+                ts[3] += min(s, (tp - avps[7, 2]) / avps[3, 1])
+
+        if avps[7, 2] > tp:
+            if up == True:
+                s /= 2
+            up = False
+            if ts[3] > 0:
+                ts[3] = max(ts[3] - s, 0)
+            elif ts[1] > 0:
+                ts[1] = max(ts[1] - s, 0)
+                ss = ts[0] * s / ts[4]
+                if ts[5] >= ss:
+                    ts[5] = max(ts[5] - ss, 0)
+                else:
+                    ss -= ts[5]
+                    ts[5] = 0
+                    if ss < ts[4]:
+                        sss = sqrt(4 * ts[4] * (-ss + ts[4])) / 2 - ts[4]
+                    else:
+                        sss = -ts[4]
+                    ts[4] += sss
+                    ts[6] = ts[4]
+
+            elif ts[0] > 0:
+                ss = max(-ts[0], -s)
+                sss = (
+                    sqrt(
+                        4 * ss**2
+                        + (4 * ts[1] + 8 * ts[0]) * ss
+                        + ts[5] ** 2
+                        + 4 * ts[4] * ts[5]
+                        + 4 * ts[4] ** 2
+                    )
+                    - ts[5]
+                ) / 2 - ts[4]
+                ts[0] += ss
+                ts[2] = ts[0]
+                ts[4] = max(ts[4] + sss, 0)
+                ts[6] = ts[4]
+        # ts = alignspeed(ts, js, vin, vout, maxa, maxv, tvp, s)
+        avps = integratetolist(ts, js, vin)
+        if avps[6, 0] < -4500:
+            pass
         if s == 0:
             raise NoconvergenceError("Failed to adjust path length")
 
