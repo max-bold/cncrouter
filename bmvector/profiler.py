@@ -555,14 +555,11 @@ def plan4(j, maxa, maxv, tp, vin=0, vout=0):
             if up == False:
                 s /= 2
             up = True
-            if avps[1, 0] < maxa and avps[3, 1] < maxv:
-                sss = sqrt(
-                    j
-                    * (
-                        (ts[1] ** 2 + 4 * ts[0] * ts[1] + 4 * ts[0] ** 2) * j
-                        + 4 * (maxv - avps[3, 1])
-                    )
-                ) / (2 * j) - (ts[1] / 2 + ts[0])
+            if avps[1, 0] < maxa - tvp and avps[3, 1] < maxv - tvp:
+                sss = (
+                    sqrt(4 * j * (ts[0] ** 2 * j + (maxv - avps[3, 1]))) / (2 * j)
+                    - ts[0]
+                )
                 ss = min(s, (maxa - avps[1, 0]) / j, sss)
                 if -avps[5, 0] < maxa:
                     sss = (
@@ -590,17 +587,16 @@ def plan4(j, maxa, maxv, tp, vin=0, vout=0):
                     ss = s
                 ts[1] += ss
                 if -avps[5, 0] < maxa:
-                    sss = (
-                        sqrt(
-                            4 * ts[0] * ss
-                            + ts[5] ** 2
-                            + 4 * ts[4] * ts[5]
-                            + 4 * ts[4] ** 2
-                        )
-                        - ts[5]
-                    ) / 2 - ts[4]
-                    ts[4] += sss
-                    ts[6] = ts[4]
+                    sss = (sqrt(4 * ts[0] * ss + 4 * ts[4] ** 2)) / 2 - ts[4]
+                    if (ts[4] + sss) * j <= maxa:
+                        ts[4] += sss
+                        ts[6] = ts[4]
+                    else:
+                        sss -= (maxa + avps[5, 0]) / j
+                        ts[4] += (maxa + avps[5, 0]) / j
+                        ts[6] = ts[4]
+                        sss = sss**2 / ts[4] + 2 * sss
+                        ts[5] += sss
                 else:
                     ts[5] += ts[0] * ss / ts[4]
             else:
@@ -616,12 +612,12 @@ def plan4(j, maxa, maxv, tp, vin=0, vout=0):
                 ts[1] = max(ts[1] - s, 0)
                 ss = ts[0] * s / ts[4]
                 if ts[5] >= ss:
-                    ts[5] = max(ts[5] - ss, 0)
+                    ts[5] -= ss
                 else:
                     ss -= ts[5]
                     ts[5] = 0
                     if ss < ts[4]:
-                        sss = sqrt(4 * ts[4] * (-ss + ts[4])) / 2 - ts[4]
+                        sss = sqrt(4 * ts[4] * (ts[4] - ss)) / 2 - ts[4]
                     else:
                         sss = -ts[4]
                     ts[4] += sss
@@ -629,24 +625,30 @@ def plan4(j, maxa, maxv, tp, vin=0, vout=0):
 
             elif ts[0] > 0:
                 ss = max(-ts[0], -s)
-                sss = (
-                    sqrt(
-                        4 * ss**2
-                        + (4 * ts[1] + 8 * ts[0]) * ss
-                        + ts[5] ** 2
-                        + 4 * ts[4] * ts[5]
-                        + 4 * ts[4] ** 2
-                    )
-                    - ts[5]
-                ) / 2 - ts[4]
+                if ts[5] == 0:
+                    x = 4 * ss**2 + 8 * ts[0] * ss + 4 * ts[4] ** 2
+                    if x > 0:
+                        sss = (sqrt(x)) / 2 - ts[4]
+                    else:
+                        sss = ts[4]
+                    ts[4] = max(ts[4] + sss, 0)
+                    ts[6] = ts[4]
+                else:
+                    sss = ss * (ss + 2 * ts[0]) / ts[4]
+                    if sss < ts[5]:
+                        ts[5] -= sss
+                    else:
+                        sss -= ts[5]
+                        ts[5] = 0
+                        sss = sqrt(4 * ts[4] * (sss + ts[4])) / 2 - ts[4]
+                        ts[4] -= sss
+                        ts[6] = ts[4]
+
                 ts[0] += ss
                 ts[2] = ts[0]
-                ts[4] = max(ts[4] + sss, 0)
-                ts[6] = ts[4]
+
         # ts = alignspeed(ts, js, vin, vout, maxa, maxv, tvp, s)
         avps = integratetolist(ts, js, vin)
-        if avps[6, 0] < -4500:
-            pass
         if s == 0:
             raise NoconvergenceError("Failed to adjust path length")
 
