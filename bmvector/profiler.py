@@ -543,7 +543,7 @@ def plan4(j, maxa, maxv, tp, vin=0, vout=0):
     js = np.array((1, 0, -1, 0, -1, 0, 1), float) * j
     ts = np.zeros(7, float)
 
-    calcspeedramp(ts, js, vin, vout, maxa, maxv, tp, tvp, tpp)
+    ts = calcspeedramp(ts, js, vin, vout, maxa, maxv, tp, tvp, tpp)
 
     avps = integratetolist(ts, js, vin)
 
@@ -652,4 +652,89 @@ def plan4(j, maxa, maxv, tp, vin=0, vout=0):
         if s == 0:
             raise NoconvergenceError("Failed to adjust path length")
 
+    return ts
+
+
+def plan4(j, maxa, maxv, tp, vin=0, vout=0):
+
+    tpp = 1 / 1000
+    tvp = 1 / 100
+    tap = 1 / 100
+
+    if vin > maxv or vout > maxv:
+        raise ValueError(f"{vin=} and {vout=} must be smaller or equal to {maxv=}!")
+
+    js = np.array((1, 0, -1, 0, -1, 0, 1), float) * j
+    ts = np.zeros(7, float)
+
+    # calcspeedramp(ts, js, vin, vout, maxa, maxv, tp, tvp, tpp)
+
+    avps = integratetolist(ts, js, vin)
+    s = 1 / 100
+    up = None
+    n=0
+    nn=0
+    while abs(tp - avps[7, 2]) > tpp or abs(vout - avps[7, 1]) > tvp:
+        n+=1
+        upp = None
+        ss = 1 / 1000
+        while abs(vout - avps[7, 1]) > tvp:
+            nn+=1
+            if avps[7, 1] > vout:
+                if upp == False:
+                    ss /= 2
+                upp = True
+                if ts[4] < maxa / j:
+                    ts[4] = min(ts[4] + ss, maxa / j)
+                    ts[6] = ts[4]
+                else:
+                    ts[5] += s
+            if avps[7, 1] < vout:
+                if upp == True:
+                    ss /= 2
+                upp = False
+                if ts[5] > 0:
+                    ts[5] = max(ts[5] - ss, 0)
+                elif ts[4] > 0:
+                    ts[4] = max(ts[4] - ss, 0)
+                    ts[6] = ts[4]
+                elif ts[0] < min(maxa / j, sqrt((maxv - vin) / j)):
+                    if up == False:
+                        s /= 2
+                    up = True
+                    ts[0] = min(ts[0] + s, maxa / j, sqrt((maxv - vin) / j))
+                    ts[2] = ts[0]
+                elif ts[1] < (maxv - vin) / (j * ts[0]) - ts[0]:
+                    if up == False:
+                        s /= 2
+                    up = True
+                    ts[1] = min(ts[1] + s, (maxv - vin) / (j * ts[0]) - ts[0])
+            avps = integratetolist(ts, js, vin)
+            if ss <1e-12:
+                raise NoconvergenceError
+        if avps[7, 2] < tp:
+            if up == False:
+                s /= 2
+            up = True
+            if ts[0] < min(maxa / j, sqrt((maxv - vin) / j)):
+                ts[0] = min(ts[0] + s, maxa / j, sqrt((maxv - vin) / j))
+                ts[2] = ts[0]
+            elif ts[1] < (maxv - vin) / (j * ts[0]) - ts[0]:
+                ts[1] = min(ts[1] + s, (maxv - vin) / (j * ts[0]) - ts[0])
+            else:
+                ts[3] += s
+        if avps[7, 2] > tp:
+            if up == True:
+                s /= 2
+            up = False
+            if ts[3] > 0:
+                ts[3] = max(ts[3] - s, 0)
+            elif ts[1] > 0:
+                ts[1] = max(ts[1] - s, 0)
+            else:
+                ts[0] = max(ts[0] - s, 0)
+                ts[2] = ts[0]
+        avps = integratetolist(ts, js, vin)
+        if s <1e-12:
+            raise NoconvergenceError
     return ts
