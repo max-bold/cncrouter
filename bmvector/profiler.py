@@ -655,6 +655,60 @@ def plan4(j, maxa, maxv, tp, vin=0, vout=0):
     return ts
 
 
+def calcspeedramp2(j, vin, vout, maxa, maxv, tp, tvp, tpp):
+
+    js = np.array((1, 0, -1, 0, -1, 0, 1), float) * j
+    ts = np.zeros(7, float)
+
+    avps = integratetolist(ts, js, vin)
+
+    s = 1 / 1000
+    up = None
+
+    while abs(avps[7, 1] - vout) > tvp:
+        if avps[7, 1] < vout:
+            if up == False:
+                s /= 2
+            up = True
+            tj = min(maxa / j, sqrt((maxv - vin) / j))
+            ta = (maxv - vin) / (j * ts[0]) - ts[0]
+            if ts[0] < tj:
+                ts[0] = min(ts[0] + s, tj)
+                ts[2] = ts[0]
+            elif ts[1] < ta:
+                ts[1] = min(ts[1] + s, ta)
+        elif avps[7, 1] > vout:
+            if up == True:
+                s /= 2
+            up = False
+            if ts[1] > 0:
+                ts[1] = max(ts[1] - s, 0)
+            elif ts[0] > 0:
+                ts[0] = max(ts[0] - s, 0)
+                ts[2] = ts[0]
+            elif -avps[5, 0] < maxa:
+                ts[4] += min(s, (maxa + avps[5, 0]) / js[0])
+                ts[6] = ts[4]
+            else:
+                if ts[3]:
+                    ts[5] += min(s, (vout - avps[7, 1]) / ts[3] / js[0])
+                else:
+                    ts[5] += s
+        avps = integratetolist(ts, js, vin)
+
+        if s == 0:
+            raise NoconvergenceError(
+                f"Couldn't calculate speed ramp with {vin=}, {vout=}, {maxa=},{maxv=}. No convergence."
+            )
+
+    if avps[7, 2] > tp + tpp:
+        raise PathtoshortError(
+            f"Path {tp=:.3f} is to short. To ramp from {vin=:.3f} to {vout=:.3f} with given j={js[0]:.0f} and {maxa=:.0f} it should be not shorter than {avps[7,2]:.3f}"
+        )
+
+    return ts
+
+
 def plan4(j, maxa, maxv, tp, vin=0, vout=0):
 
     tpp = 1 / 1000
@@ -672,14 +726,14 @@ def plan4(j, maxa, maxv, tp, vin=0, vout=0):
     avps = integratetolist(ts, js, vin)
     s = 1 / 100
     up = None
-    n=0
-    nn=0
+    n = 0
+    nn = 0
     while abs(tp - avps[7, 2]) > tpp or abs(vout - avps[7, 1]) > tvp:
-        n+=1
+        n += 1
         upp = None
         ss = 1 / 1000
         while abs(vout - avps[7, 1]) > tvp:
-            nn+=1
+            nn += 1
             if avps[7, 1] > vout:
                 if upp == False:
                     ss /= 2
@@ -695,6 +749,7 @@ def plan4(j, maxa, maxv, tp, vin=0, vout=0):
                 upp = False
                 if ts[5] > 0:
                     ts[5] = max(ts[5] - ss, 0)
+                    # ts[5] = 0
                 elif ts[4] > 0:
                     ts[4] = max(ts[4] - ss, 0)
                     ts[6] = ts[4]
@@ -710,8 +765,8 @@ def plan4(j, maxa, maxv, tp, vin=0, vout=0):
                     up = True
                     ts[1] = min(ts[1] + s, (maxv - vin) / (j * ts[0]) - ts[0])
             avps = integratetolist(ts, js, vin)
-            if ss <1e-12:
-                raise NoconvergenceError
+            # if ss < 1e-12:
+            #     raise NoconvergenceError
         if avps[7, 2] < tp:
             if up == False:
                 s /= 2
@@ -722,19 +777,21 @@ def plan4(j, maxa, maxv, tp, vin=0, vout=0):
             elif ts[1] < (maxv - vin) / (j * ts[0]) - ts[0]:
                 ts[1] = min(ts[1] + s, (maxv - vin) / (j * ts[0]) - ts[0])
             else:
-                ts[3] += s
+                # ts[3] += s
+                ts[3] = (tp - avps[7, 2]) / avps[3, 1]
         if avps[7, 2] > tp:
             if up == True:
                 s /= 2
             up = False
             if ts[3] > 0:
-                ts[3] = max(ts[3] - s, 0)
+                # ts[3] = max(ts[3] - s, 0)
+                ts[3] = 0
             elif ts[1] > 0:
                 ts[1] = max(ts[1] - s, 0)
             else:
                 ts[0] = max(ts[0] - s, 0)
                 ts[2] = ts[0]
         avps = integratetolist(ts, js, vin)
-        if s <1e-12:
-            raise NoconvergenceError
+        # if s < 1e-12:
+        #     raise NoconvergenceError
     return ts

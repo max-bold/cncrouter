@@ -19,7 +19,7 @@ a = 5000
 v = 1000
 vin = 15
 vout = 378
-p = 65
+p = 6500
 
 # # ts = np.zeros(7,float)
 js = np.array((1, 0, -1, 0, -1, 0, 1)) * j
