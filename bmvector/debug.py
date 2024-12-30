@@ -42,22 +42,9 @@ t = time() - t
 # # ts += np.array((0.1, 0, 0.1, 0, 0.111479023011, 0, 0.111479023011), float)
 # # print(pr.integratetolist(ts, js, vin))
 
-# #86548:
-# p=143.033
-# vin=166.349
-# vout=948.6951
-
-# p= 164.307
-# vin= 587.996
-# vout= 997.926
-
-# p = 20.894
-# vin = 971.274
-# vout = 975.343
-
-p= 143.855
-vin=  57.568
-vout= 885.419
+# p= 119.529
+# vin= 110.777
+# vout=  19.936
 
 tt = time()
 fails = 0
@@ -67,9 +54,9 @@ n = 1000000
 max_medt = 0
 min_medt = float("inf")
 for i in range(n):
-    # vin = np.random.rand() * v
-    # vout = np.random.rand() * v
-    # p = np.random.rand() * 1000
+    vin = np.random.rand() * v
+    vout = np.random.rand() * v
+    p = np.random.rand() * 1000
     pstr = f"#{i:7g}: {p=:8.3f}, {vin=:8.3f}, {vout=:8.3f}"
     maxlen = max(maxlen, len(pstr))
     if len(pstr) < maxlen:

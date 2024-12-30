@@ -747,25 +747,28 @@ def plan5(j, maxa, maxv, tp, vin=0, vout=0):
     while abs(tp - avps[7, 2]) > tpp or abs(vout - avps[7, 1]) > tvp:
         n += 1
         upp = None
-        ss = 1 / 1000
+        ss = s/10
         while abs(vout - avps[7, 1]) > tvp:
             nn += 1
-            if avps[7, 1] > vout:
+            if avps[7, 1] > vout+tvp:
                 if upp == False:
                     ss /= 2
                 upp = True
-                if avps[7, 2] < tp:
+                if avps[7, 2] <= tp:
                     tj = maxa / j
                     if ts[4] < tj:
                         ts[4] = min(ts[4] + ss, tj)
                     else:
                         ts[5] += ss
-                else:
+                if avps[7, 2] > tp:
+                    if up == True:
+                        s /= 2
+                    up = False
                     if ts[1] > 0:
                         ts[1] -= ss
                     else:
                         ts[0] -= ss
-            if avps[7, 1] < vout:
+            if avps[7, 1] < vout-tvp:
                 if upp == True:
                     ss /= 2
                 upp = False
@@ -786,7 +789,7 @@ def plan5(j, maxa, maxv, tp, vin=0, vout=0):
             avps = integratetolist(ts, js, vin)
             pass
 
-        if avps[7, 2] < tp:
+        if avps[7, 2] < tp-tpp:
             if up == False:
                 s /= 2
             up = True
@@ -800,7 +803,7 @@ def plan5(j, maxa, maxv, tp, vin=0, vout=0):
             else:
                 # ts[3] += s
                 ts[3] = (tp - avps[7, 2]) / avps[3, 1]
-        if avps[7, 2] > tp:
+        if avps[7, 2] > tp+tpp:
             if up == True:
                 s /= 2
             up = False
