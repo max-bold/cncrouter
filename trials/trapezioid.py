@@ -115,15 +115,14 @@ def inegrator(t, a, vin, pin):
 def integrateto(ts, t, a, vin):
     aa = [a, 0, -a]
     tt = []
-    if t > 0:
-        sumt = 0
-        for ct in ts:
-            if t > sumt + ct:
-                tt.append(ct)
-                sumt += ct
-            elif t > 0:
-                tt.append(t - sumt)
-                break
+    sumt = 0
+    for ct in ts:
+        if t > sumt + ct:
+            tt.append(ct)
+            sumt += ct
+        elif t > 0:
+            tt.append(t - sumt)
+            break
     ac = 0
     vc = vin
     pc = 0
