@@ -7,9 +7,9 @@ class gparser:
         self.absmove = True
         self.absextrude = True
         self.cpos = np.zeros(7, float)
-        self.cspeed = 0
+        self.cspeed = 0  # mm/s
         self.homepos = np.array((0, 0, 0, 0, 0, 0, 0))
-        self.hspeed = 300
+        self.hspeed = 50  # mm/s
 
     def comtodict(self, line: str):
         """Strips comments and converts a line from g-code file to a dict like {'com': 'G1', 'e': -1.0, 'f': 300.0}. For comment lines (starting from ';') returns empty dict.
@@ -97,7 +97,7 @@ class gparser:
             res[6] = npos[6]
             self.cpos[6] += npos[6]
         if "f" in com:
-            self.cspeed = com["f"]
+            self.cspeed = com["f"] / 60  # Converting from mm/min to mm/s
         res[7] = self.cspeed
         return res
 
@@ -112,7 +112,7 @@ class gparser:
 
         Returns:
             ndarray: movement vector
-        """        
+        """
         npos = self.cpos.copy()
         res = np.zeros(8, float)
         for key, i in zip("xyzabce", range(7)):
@@ -131,7 +131,7 @@ class gparser:
 
         Args:
             com (dict): command dict from gparser.comtodict
-        """        
+        """
         for key, i in zip("xyzabce", range(7)):
             if key in com:
                 self.cpos[i] = com[key]
@@ -144,7 +144,7 @@ class gparser:
 
         Returns:
             list: The list of moves
-        """        
+        """
         queue = []
         file = open(filepath)
         for line in file:

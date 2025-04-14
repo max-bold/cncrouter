@@ -38,6 +38,12 @@
             "module": "bmvector.debug"
         },
         {
+            "name": "trapez.py",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "trials.gcode.trapez"
+        },
+        {
             "name": "MUPY",
             "type": "debugpy",
             "request": "launch",
