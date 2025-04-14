@@ -67,7 +67,7 @@ class gparser:
         return res
 
     def dicttovector(self, com: dict):
-        """Converts command dict to a movement vector.
+        """Converts command dict to a movement vector for a linear move.
 
         Args:
             com (dict): command dict from gparser.comtodict
@@ -105,6 +105,14 @@ class gparser:
         raise NotImplementedError
 
     def dicttohome(self, com: dict):
+        """Implements homing G28 method. Homes parser to self.homepos with given axis and offset.
+
+        Args:
+            com (dict): command dict from gparser.comtodict
+
+        Returns:
+            ndarray: movement vector
+        """        
         npos = self.cpos.copy()
         res = np.zeros(8, float)
         for key, i in zip("xyzabce", range(7)):
@@ -119,11 +127,24 @@ class gparser:
         return res
 
     def setcpos(self, com: dict):
+        """Sets self.cpos for G92
+
+        Args:
+            com (dict): command dict from gparser.comtodict
+        """        
         for key, i in zip("xyzabce", range(7)):
             if key in com:
                 self.cpos[i] = com[key]
 
     def parse(self, filepath):
+        """Parses g-code file and returns a list of moves
+
+        Args:
+            filepath (_type_): Path to g-code file
+
+        Returns:
+            list: The list of moves
+        """        
         queue = []
         file = open(filepath)
         for line in file:
@@ -152,25 +173,4 @@ class gparser:
 
 
 if __name__ == "__main__":
-    np.set_printoptions(suppress=True, precision=2, floatmode="fixed")
-    path = r"trials\gcode\3DBenchy_0.2mm_PLA_MEGA0_1h48m.gcode"
-    # path = r"trials\gcode\test.gcode"
-    p = gparser()
-    pos = p.cpos[:7]
-    queue = p.parse(path)
-    for move in queue:
-        pos += move[:7]
-    print(pos)
-    # file = open(path)
-    # parser = gparser()
-    # for line in file:
-    #     d = parser.comtodict(line)
-    #     if d:
-    #         print(d)
-    # line = "G28 X Y50"
-    # p = gparser()
-    # d = p.comtodict(line)
-    # p.homepos = np.array((200, 0, 0, 0, 0, 0, 0))
-    # p.cpos = np.array((100, 30, 0, 0, 0, 0, 0))
-    # p.hspeed = 200
-    # print(p.dicttohome(d))
+    pass
