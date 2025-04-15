@@ -1,6 +1,6 @@
 from .gcodereader import gparser
 import numpy as np
-from ..trapezioid import tplaner
+from ...bmvector.trapezioid import tplaner
 from datetime import timedelta
 import matplotlib.pyplot as plt
 

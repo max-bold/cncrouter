@@ -133,6 +133,9 @@ def integrateto(ts, t, a, vin):
         vc = 0
     return ac, vc, pc
 
+def tplaner2(s, v, a, vin, vout):
+    pass
+
 
 if __name__ == "__main__":
     maxa = 10000
