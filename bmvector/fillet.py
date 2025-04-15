@@ -8,20 +8,25 @@ import matplotlib.pyplot as plt
 def fillet(v1, v2, p):
     """Creates a fillet between two vectors with given distance from corner to the arc.
     Returns two trimed vectors and arc vector (chord). Arc direction is always eq to v1.
-    Trimed vectors
+    Vectors are trimed not more:
+        input vector to 0.1 of length
+        output vector to 0.5 of length
 
     Args:
-        v1 (_type_): _description_
-        v2 (_type_): _description_
-        p (_type_): _description_
+        v1 (ndarray[3,float]): input vector
+        v2 (ndarray[3,float]): output vector
+        p (float): max distance from corner to arc
 
     Returns:
-        _type_: _description_
+        tupple: 
+            v1t (ndarray[3,float]): trimed input vector, 
+            rv (ndarray[3,float]): arc chord vector, 
+            v2t (ndarray[3,float]): trimed output vector
     """    
     a = pi - acos(np.dot(v1, v2) / la.norm(v1) / la.norm(v2))
     s = sin(a / 2)
     r1 = p * s / (1 - s)
-    r2 = la.norm(v1) * tan(a / 2) / 2
+    r2 = la.norm(v1) * tan(a / 2)*0.9
     r3 = la.norm(v2) * tan(a / 2) / 2
     r = min(r1, r2, r3)
     t = r / tan(a / 2)
@@ -35,7 +40,17 @@ def fillet(v1, v2, p):
     return v1t, rv, v2t
 
 
-def arcinterp(v1, v2):
+def arcinterp(v1, v2, k=20):
+    """interpolates arc given with input dir and chord vector
+
+    Args:
+        v1 (ndarray[3,float]): input dir vector (of any length)
+        v2 (ndarray[3,float]): chord vector
+        k (int, optional): Number of steps. Defaults to 20.
+
+    Returns:
+        list[ndarray[3,float]]: list of vectors representing the arc
+    """    
     b = acos(np.dot(v1, v2) / la.norm(v1) / la.norm(v2))
     a = pi - b * 2
     r = la.norm(v2) / 2 / cos(a / 2)
@@ -45,7 +60,7 @@ def arcinterp(v1, v2):
     c = q1.rotate(c)
     c3 = c
     res = []
-    for i in np.linspace(0, 2 * b, 20):
+    for i in np.linspace(0, 2 * b, k):
         q2 = Quaternion(axis=n, angle=i)
         c2 = q2.rotate(-c)
         res.append(c3 + c2)
@@ -54,6 +69,17 @@ def arcinterp(v1, v2):
 
 
 def arcparam(v1, v2):
+    """Returns arc length and radius
+
+    Args:
+        v1 (ndarray[3,float]): input dir
+        v2 (ndarray[3,float]): chord vector
+
+    Returns:
+        tupple(float): 
+            r: radius
+            l: length
+    """    
     b = acos(np.dot(v1, v2) / la.norm(v1) / la.norm(v2))
     r = la.norm(v2) / 2 / sin(b)
     l = r * 2 * b
