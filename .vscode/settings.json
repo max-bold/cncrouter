@@ -16,5 +16,8 @@
         "latex",
         "plaintext",
         "python"
-    ]
+    ],
+    "mypy-type-checker.severity": {
+        "error": "Warning"
+    }
 }
