@@ -89,7 +89,7 @@ def arcparam(v1, v2):
 if __name__ == "__main__":
     v1 = np.array((-10, 0, 0))
     v2 = np.array((-10, -.1, 0))
-    v1t, rv, v2t = fillet(v1, v2, 3)
+    v1t, rv, v2t = fillet(v1, v2, 0.1)
     print(v1t, rv, v2t)
     print(*arcparam(v1t,rv))
     p1 = [[0, 0]]
@@ -100,16 +100,8 @@ if __name__ == "__main__":
     p2.append(p2[0] + v1t[:2])
     for p in arcinterp(v1t, rv):
         p2.append(p2[-1] + p[:2])
-    # p2.append(p2[1] + rv[:2])
     p2.append(p2[-1] + v2t[:2])
     plt.plot(*zip(*p1), "r")
     plt.plot(*zip(*p2), "g")
     plt.axis("equal")
     plt.show()
-
-    # v1=np.array((10,10,0))
-    # v2=np.array((10,-10,0))
-    # r = arcinterp(v1,v2)
-    # plt.plot(*zip(*r))
-    # plt.axis("equal")
-    # plt.show()
