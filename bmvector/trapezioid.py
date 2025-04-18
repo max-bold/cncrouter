@@ -3,19 +3,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def tplaner(path, maxa, maxv):
-    ts = np.zeros(3, float)
-    ta = sqrt(path / maxa)
-    if ta <= maxv / maxa:
-        ts[0] = ta
-        ts[2] = ta
-    else:
-        ta = maxv / maxa
-        vp = path - 2 * maxa * (ta**2)
-        ts[0] = ta
-        ts[1] = vp / maxv
-        ts[2] = ta
-    return ts
+def tplaner(p, v, a):
+    ta = min(sqrt(p / a), v / a)
+    tv = max(0, (p - ta**2 * a) / v)
+    return np.array((ta, tv, ta), float)
 
 
 def tintegrator(ts: np.ndarray, t, maxa):
@@ -133,48 +124,62 @@ def integrateto(ts, t, a, vin):
         vc = 0
     return ac, vc, pc
 
-def tplaner2(s, v, a, vin, vout):
-    pass
+
+def tplaner2(
+    p: float,
+    v: float,
+    a: float,
+    vin: float = 0,
+    vout: float = 0,
+) -> np.ndarray:
+    t1 = min((sqrt(2 * a * p + vin**2 + vout**2) / sqrt(2) - vin) / a, (v - vin) / a)
+    t3 = t1 + (vin - vout) / a
+    t2 = max(0, (p + (t3**2 - 2 * t1 * t3 - t1**2) * a / 2 - (t3 + t1) * vin) / v)
+    return np.array((t1, t2, t3), float)
 
 
 if __name__ == "__main__":
-    maxa = 10000
-    maxv = 1000
-    minv = 20
-    ts = tjplaner(200, minv, maxa, maxv)
-    aa = []
-    vv = []
-    pp = []
-    tt = np.linspace(-0.01, ts.sum() + 0.01, 1000)
-    for t in tt:
-        a, v, p = integrateto(ts, t, maxa, minv)
-        aa.append(a)
-        vv.append(v)
-        pp.append(p)
+    # maxa = 10000
+    # maxv = 1000
+    # minv = 20
+    # ts = tjplaner(200, minv, maxa, maxv)
+    # aa = []
+    # vv = []
+    # pp = []
+    # tt = np.linspace(-0.01, ts.sum() + 0.01, 1000)
+    # for t in tt:
+    #     a, v, p = integrateto(ts, t, maxa, minv)
+    #     aa.append(a)
+    #     vv.append(v)
+    #     pp.append(p)
 
-    figure, axis = plt.subplots(3, 2)
-    figure.suptitle(f"Vin/Vout = {minv} mm/s, dT = {(tt[1]-tt[0])*1000:.2f} ms")
-    axis[0, 0].plot(tt, aa)
-    axis[0, 0].title.set_text("Acceleration, mm/s²")
-    axis[1, 0].plot(tt, vv)
-    axis[1, 0].title.set_text("Velocity, mm/s")
-    axis[2, 0].plot(tt, pp)
-    axis[2, 0].title.set_text("Position, mm")
+    # figure, axis = plt.subplots(3, 2)
+    # figure.suptitle(f"Vin/Vout = {minv} mm/s, dT = {(tt[1]-tt[0])*1000:.2f} ms")
+    # axis[0, 0].plot(tt, aa)
+    # axis[0, 0].title.set_text("Acceleration, mm/s²")
+    # axis[1, 0].plot(tt, vv)
+    # axis[1, 0].title.set_text("Velocity, mm/s")
+    # axis[2, 0].plot(tt, pp)
+    # axis[2, 0].title.set_text("Position, mm")
 
-    dp = []
-    dv = []
-    for i in range(len(tt) - 1):
-        dt = tt[i + 1] - tt[i]
-        dp.append((pp[i + 1] - pp[i]) / dt)
-        dv.append((vv[i + 1] - vv[i]) / dt)
+    # dp = []
+    # dv = []
+    # for i in range(len(tt) - 1):
+    #     dt = tt[i + 1] - tt[i]
+    #     dp.append((pp[i + 1] - pp[i]) / dt)
+    #     dv.append((vv[i + 1] - vv[i]) / dt)
 
-    axis[0, 1].plot(tt[:-1], dv)
-    axis[0, 1].title.set_text("dV/dT, mm/s²")
-    axis[1, 1].plot(tt[:-1], dp)
-    axis[1, 1].title.set_text("dP/dT, mm/s")
-    axis[2, 1].plot(tt[:-1], pp[:-1])
-    axis[2, 1].title.set_text("Position, mm")
+    # axis[0, 1].plot(tt[:-1], dv)
+    # axis[0, 1].title.set_text("dV/dT, mm/s²")
+    # axis[1, 1].plot(tt[:-1], dp)
+    # axis[1, 1].title.set_text("dP/dT, mm/s")
+    # axis[2, 1].plot(tt[:-1], pp[:-1])
+    # axis[2, 1].title.set_text("Position, mm")
 
-    # for i in range(len(tt-5)):
+    # # for i in range(len(tt-5)):
 
-    plt.show()
+    # plt.show()
+    np.set_printoptions(precision=5, floatmode="fixed")
+    ts = tplaner2(2000, 500, 2000, 100, 20)
+    print(ts, np.sum(ts))
+    # print(tplaner(1000, 5000, 500))
